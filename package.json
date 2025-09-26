@@ -1,12 +1,11 @@
 {
-  name payment-city-vehicles-bot,
-  version 1.0.0,
-  main bot.js,
-  scripts {
-    start node bot.js
+  "name": "payment_tg_bot",
+  "version": "1.0.0",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
   },
-  dependencies {
-    node-telegram-bot-api ^0.61.0
+  "dependencies": {
+    "node-telegram-bot-api": "^0.61.0"
   }
 }
-
