@@ -1,24 +1,23 @@
-import TelegramBot from 'node-telegram-bot-api';
+const TelegramBot = require('node-telegram-bot-api');
 
-const token = process.env.TELEGRAM_BOT_TOKEN!;
+const token = process.env.TELEGRAM_BOT_TOKEN;
+if (!token) throw new Error('TELEGRAM_BOT_TOKEN не задан!');
+
 const bot = new TelegramBot(token, { polling: true });
 
+// Обработка /start с параметром
 bot.onText(/\/start(?: (.+))?/, (msg, match) => {
   const chatId = msg.chat.id;
-  const param = match?.[1];
+  const param = match && match[1] ? match[1] : null;
+  bot.sendMessage(chatId, `Привет! Ваш параметр: ${param || 'нет параметра'}`);
+});
 
-  if (param) {
-    const webAppUrl = `https://payment-city-vehicles.onrender.com/?param=${param}`;
-    bot.sendMessage(chatId, `Откройте WebApp для вашего транспорта: ${param}`, {
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: 'Открыть WebApp', web_app: { url: webAppUrl } }]
-        ],
-      },
-    });
-  } else {
-    bot.sendMessage(chatId, 'Добро пожаловать! Укажите транспорт через deep link.');
+// Обработка любых текстовых сообщений
+bot.on('message', msg => {
+  const chatId = msg.chat.id;
+  if (!msg.text.startsWith('/start')) {
+    bot.sendMessage(chatId, 'Бот работает! Используйте /start <параметр>');
   }
 });
 
-console.log('✅ Бот запущен...');
+console.log('✅ Бот запущен!');
