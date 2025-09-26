@@ -5,19 +5,19 @@ if (!token) throw new Error('TELEGRAM_BOT_TOKEN не задан!');
 
 const bot = new TelegramBot(token, { polling: true });
 
-// Обработка /start с параметром
-bot.onText(/\/start(?: (.+))?/, (msg, match) => {
+// Хранилище пользователей, которые начали бота
+const users = new Set();
+
+// Обработка /start
+bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  const param = match && match[1] ? match[1] : null;
-  bot.sendMessage(chatId, `Привет! Ваш параметр: ${param || 'нет параметра'}`);
+  users.add(chatId);
+  bot.sendMessage(chatId, 'Привет! Открывайте сайт через кнопку "Оплата транспорта".');
 });
 
-// Обработка любых текстовых сообщений
-bot.on('message', msg => {
-  const chatId = msg.chat.id;
-  if (!msg.text.startsWith('/start')) {
-    bot.sendMessage(chatId, 'Бот работает! Используйте /start <параметр>');
-  }
-});
+// Функция для отправки чека пользователю
+function sendReceipt(chatId, receiptText) {
+  bot.sendMessage(chatId, receiptText, { parse_mode: 'MarkdownV2' });
+}
 
-console.log('✅ Бот запущен!');
+module.exports = { sendReceipt, users };
