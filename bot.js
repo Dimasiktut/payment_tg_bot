@@ -1,64 +1,53 @@
-import TelegramBot from "node-telegram-bot-api";
-import fs from "fs";
+const TelegramBot = require("node-telegram-bot-api");
+const fs = require("fs");
 
-const token = process.env.TELEGRAM_BOT_TOKEN;
-const bot = new TelegramBot(token, { polling: true });
+const BOT_TOKEN = process.env.BOT_TOKEN;
+if (!BOT_TOKEN) {
+  console.error("❌ BOT_TOKEN не найден в переменных окружения");
+  process.exit(1);
+}
 
-// Файл для хранения истории
+const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+
 const DB_FILE = "tickets.json";
 let tickets = {};
 
-// Загружаем сохранённые данные
+// Загружаем сохранённые билеты
 if (fs.existsSync(DB_FILE)) {
   tickets = JSON.parse(fs.readFileSync(DB_FILE));
 }
 
-// Сохраняем билеты
-function saveTickets() {
-  fs.writeFileSync(DB_FILE, JSON.stringify(tickets, null, 2));
-}
-
-// Команда старт
 bot.onText(/\/start/, (msg) => {
   const chatId = msg.chat.id;
-  if (!tickets[chatId]) tickets[chatId] = [];
-  saveTickets();
-
-  bot.sendMessage(chatId, "Привет! Здесь будут твои билеты.\n\nКоманды:\n/history — показать билеты");
+  bot.sendMessage(
+    chatId,
+    `👋 Привет, ${msg.from.first_name}!\n\nЧерез кнопку ниже ты можешь открыть WebApp для покупки билетов.`,
+    {
+      reply_markup: {
+        inline_keyboard: [[{ text: "Открыть сайт", web_app: { url: process.env.WEBAPP_URL } }]]
+      }
+    }
+  );
 });
 
-// Команда история
 bot.onText(/\/history/, (msg) => {
   const chatId = msg.chat.id;
   const userTickets = tickets[chatId] || [];
 
   if (userTickets.length === 0) {
-    bot.sendMessage(chatId, "У тебя пока нет билетов 🚍");
-  } else {
-    let history = userTickets.map(
-      (t, i) => `#${i + 1} — ${t.vehicle} | ${t.time} | ID: ${t.id}`
-    ).join("\n");
-
-    bot.sendMessage(chatId, "🧾 Твои билеты:\n\n" + history);
+    return bot.sendMessage(chatId, "📭 У тебя пока нет билетов");
   }
+
+  let history = userTickets
+    .map(
+      (t, i) =>
+        `#${i + 1} — ${t.vehicleType} | ТС ${t.vehicleNumber} | ${t.amount}₽ | ID: ${t.id} | ${new Date(
+          t.dateTime
+        ).toLocaleString("ru-RU")}`
+    )
+    .join("\n\n");
+
+  bot.sendMessage(chatId, "🧾 История билетов:\n\n" + history);
 });
 
-// 🚀 API для сайта: POST /addTicket
-import express from "express";
-const app = express();
-app.use(express.json());
-
-app.post("/addTicket", (req, res) => {
-  const { userId, id, vehicle, time } = req.body;
-
-  if (!tickets[userId]) tickets[userId] = [];
-  tickets[userId].push({ id, vehicle, time });
-  saveTickets();
-
-  bot.sendMessage(userId, `✅ Новый билет!\n${vehicle} | ${time}\nID: ${id}`);
-  res.json({ status: "ok" });
-});
-
-// Запускаем API
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Bot server running on " + PORT));
+console.log("🤖 Bot started");
